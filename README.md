@@ -64,15 +64,19 @@ This will index 5 sample albums:
 vespa query "select * from music where album contains 'head'"
 ```
 
+![query 1](img/query_1.png)
+
 **Get a specific document:**
 ```bash
 vespa document get id:mynamespace:music::a-head-full-of-dreams
 ```
+![query 2](img/query_2.png)
 
 **Search by artist:**
 ```bash
 vespa query "select * from music where artist contains 'Coldplay'"
 ```
+![query 3](img/query_3.png)
 
 ## Project Structure
 
