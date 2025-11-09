@@ -1,145 +1,117 @@
-# Vespa Demo - Album Recommendations
+# Vespa RAG Demo
 
-A simple Vespa application for music album search and recommendations. This demo demonstrates how to deploy a Vespa application locally, feed music data, and perform searches.
+This project demonstrates a Retrieval-Augmented Generation (RAG) application using Vespa as the search engine and a Spring Boot backend to orchestrate the process. The application allows searching for music albums and uses a Large Language Model (LLM) to generate descriptions or answer questions based on the search results.
 
 ## Overview
 
-This application indexes music albums with metadata including:
-- Artist name
-- Album title
-- Release year
-- Category scores (pop, rock, jazz)
+The architecture consists of two main components:
+- **Vespa**: A powerful search engine that indexes music album data and provides fast and relevant search results.
+- **RAG Application**: A Spring Boot application that provides a REST API for search and RAG queries. It queries Vespa to retrieve relevant documents and then uses the results to prompt a generative AI model.
 
-The application includes a ranking profile that combines BM25 text matching with personalized recommendations based on user category preferences.
+This demo is containerized and managed using Docker Compose and a `Makefile` for easy setup and execution.
 
 ## Requirements
 
-- Docker installed and running
-- Minimum 4GB RAM allocated to Docker (check with `docker info | grep "Total Memory"`)
-- Vespa CLI installed ([Installation guide](https://docs.vespa.ai/en/vespa-cli.html))
+- Docker and Docker Compose
+- `make`
+- A Gemini API Key
 
 ## Quick Start
 
-### 1. Start Vespa Container
+1.  **Create a `.env` file:**
+    Copy the `.env.example` file to `.env` and add your Gemini API key:
+    ```bash
+    cp .env.example .env
+    ```
+    Then, edit `.env` and add your key:
+    ```
+    GEMINI_API_KEY=your_gemini_api_key_here
+    ```
 
-```bash
-docker run --detach --name vespa --hostname vespa-container \
-  --publish 8080:8080 --publish 19071:19071 \
-  vespaengine/vespa
-```
+2.  **Run the Quickstart command:**
+    This command will build the Docker images, start the services, deploy the Vespa application, and feed the sample data.
+    ```bash
+    make quickstart
+    ```
 
-### 2. Configure Vespa CLI
+3.  **Test the application:**
+    Once the quickstart is complete, you can test the search and RAG endpoints.
 
-```bash
-vespa config set target local
-```
+    *   **Test the search endpoint:**
+        ```bash
+        make test-search
+        ```
+        This will query the search API for "rock music".
 
-### 3. Deploy the Application
+    *   **Test the RAG endpoint:**
+        ```bash
+        make test-rag
+        ```
+        This will send a question to the RAG API and return a generated answer.
 
-From the project root directory:
+## Available `make` Commands
 
-```bash
-vespa deploy --wait 300 ./app
-```
+This project uses a `Makefile` to simplify common tasks.
 
-Wait for deployment to complete (up to 5 minutes). The application includes a disk limit configuration set to 85% to handle systems with limited disk space.
+### Docker Compose Commands
+- `make build`: Build the Docker images.
+- `make up`: Start all services in the background.
+- `make down`: Stop all services.
+- `make restart`: Restart all services.
+- `make logs`: View logs from all services.
+- `make logs-vespa`: View logs from the Vespa container.
+- `make logs-app`: View logs from the RAG application container.
+- `make clean`: Stop all services and remove Docker volumes.
 
-### 4. Feed Sample Data
+### Vespa Commands
+- `make deploy`: Deploy the Vespa application schema.
+- `make feed`: Feed the sample data to Vespa.
+- `make vespa-status`: Check the status of the Vespa instance.
+- `make vespa-health`: Check the health of the Vespa instance.
 
-```bash
-vespa feed dataset/documents.jsonl
-```
+### Testing Commands
+- `make health`: Check the health of all services.
+- `make test-search`: Run a sample query against the search endpoint.
+- `make test-rag`: Run a sample query against the RAG endpoint.
 
-This will index 5 sample albums:
-- A Head Full of Dreams (Coldplay)
-- Hardwired...To Self-Destruct (Metallica)
-- Liebe ist für alle da (Rammstein)
-- Love Is Here To Stay (Diana Krall)
-- When We All Fall Asleep, Where Do We Go? (Billie Eilish)
-
-### 5. Query the Data
-
-**Search for albums:**
-```bash
-vespa query "select * from music where album contains 'head'"
-```
-
-![query 1](img/query_1.png)
-
-**Get a specific document:**
-```bash
-vespa document get id:mynamespace:music::a-head-full-of-dreams
-```
-![query 2](img/query_2.png)
-
-**Search by artist:**
-```bash
-vespa query "select * from music where artist contains 'Coldplay'"
-```
-![query 3](img/query_3.png)
+### Development Commands
+- `make rebuild-app`: Rebuild and restart the RAG application service.
+- `make shell-vespa`: Open a shell inside the Vespa container.
+- `make shell-app`: Open a shell inside the RAG application container.
 
 ## Project Structure
 
 ```
 vespa-demo/
-├── app/
+├── app/                    # Vespa application configuration
 │   ├── schemas/
-│   │   └── music.sd          # Document schema definition
-│   └── services.xml          # Application services configuration
+│   │   └── music.sd        # Vespa document schema
+│   └── services.xml
+├── build.gradle            # Gradle build file for the Java application
 ├── dataset/
-│   ├── documents.jsonl       # Sample data in JSONL format
-│   └── *.json                # Individual album JSON files
-└── README.md
+│   └── documents.jsonl     # Sample data
+├── docker-compose.yml      # Docker Compose file for services
+├── Dockerfile              # Dockerfile for the Spring Boot application
+├── Makefile                # Makefile with helper commands
+├── src/                    # Java source code for the RAG application
+└── ...
 ```
 
-## Configuration
+## API Endpoints
 
-### Schema (`app/schemas/music.sd`)
+The RAG application exposes the following endpoints on `http://localhost:8081`:
 
-Defines the document structure:
-- `artist`: String field (indexed and searchable)
-- `album`: String field (indexed with BM25)
-- `year`: Integer field
-- `category_scores`: Tensor with category preferences (pop, rock, jazz)
+- `POST /api/search`: Searches the Vespa index.
+- `POST /api/rag/query`: Performs a RAG query.
+- `GET /api/search/health`: Health check for the search service.
+- `GET /api/rag/health`: Health check for the RAG service.
 
-### Services (`app/services.xml`)
+The Vespa instance is available on `http://localhost:8080`.
 
-- **Container cluster**: Handles queries and document API requests
-- **Content cluster**: Stores and indexes documents
-- **Resource limits**: Disk limit set to 85% (configured in `<tuning>` section)
+## Testing output
 
-## Troubleshooting
+- Test the search endpoint
+![make test-search](img/test_1.png)
 
-### Feed Blocked (507 Error)
-
-If you encounter a `507` error with message "disk on node 0 is X% full", the disk limit has been configured to 85% in `services.xml`. If you still see this error:
-
-1. Check available disk space: `docker exec vespa df -h`
-2. Free up space on your host system
-3. The limit can be adjusted in `app/services.xml` under `<tuning><resource-limits><disk>`
-
-### Deployment Issues
-
-- Ensure Docker has at least 4GB RAM allocated
-- Wait for deployment to complete (check with `vespa status`)
-- Verify container is running: `docker ps | grep vespa`
-
-## Access Points
-
-Once deployed, you can access:
-- **Query API**: http://localhost:8080
-- **Config Server**: http://localhost:19071
-
-## Cleanup
-
-To stop and remove the Vespa container:
-
-```bash
-docker rm -f vespa
-```
-
-## Learn More
-
-- [Vespa Documentation](https://docs.vespa.ai/)
-- [Vespa Getting Started](https://cloud.vespa.ai/en/getting-started)
-- [Vespa Query Language](https://docs.vespa.ai/en/query-language.html)
+- Test the RAG endpoint
+![make test-rag](img/test_2.png)

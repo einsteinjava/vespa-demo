@@ -21,14 +21,34 @@ schema music {
             indexing: summary | attribute
         }
 
+        field text type string {
+            indexing: summary | index
+            index: enable-bm25
+        }
+
         field category_scores type tensor<float>(cat{}) {
             indexing: summary | attribute
         }
 
     }
 
+    # Embedding field for semantic search
+    # Uses 384-dimensional vectors (matches all-MiniLM-L6-v2 model)
+    field text_embedding type tensor<float>(x[384]) {
+        indexing: input text | embed | attribute | index
+        attribute {
+            distance-metric: angular
+        }
+        index {
+            hnsw {
+                max-links-per-node: 16
+                neighbors-to-explore-at-insert: 200
+            }
+        }
+    }
+
     fieldset default {
-        fields: artist, album
+        fields: artist, album, text
     }
 
     # Rank profiles defines what to compute over the data, and how to use the computation result to order them
@@ -43,6 +63,31 @@ schema music {
         }
         first-phase {
             expression: bm25(album) + 0.25 * sum(query(user_profile) * attribute(category_scores))
+        }
+    }
+
+    # Hybrid rank profile: combines text matching (BM25) with semantic similarity
+    rank-profile hybrid inherits default {
+        inputs {
+            query(query_embedding) tensor<float>(x[384])
+        }
+        first-phase {
+            expression {
+                0.5 * bm25(text) +
+                0.3 * bm25(album) +
+                0.2 * bm25(artist) +
+                10 * closeness(field, text_embedding)
+            }
+        }
+    }
+
+    # Semantic-only rank profile: pure vector similarity search
+    rank-profile semantic inherits default {
+        inputs {
+            query(query_embedding) tensor<float>(x[384])
+        }
+        first-phase {
+            expression: closeness(field, text_embedding)
         }
     }
 

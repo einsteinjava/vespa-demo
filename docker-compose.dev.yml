@@ -1,0 +1,37 @@
+# Development override for docker-compose
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  vespa:
+    # Development: Use more verbose logging
+    environment:
+      - VESPA_LOG_LEVEL=debug
+    # Mount app directory for live schema updates
+    volumes:
+      - vespa-data:/opt/vespa/var
+      - ./app:/app:ro
+
+  rag-app:
+    # Development: Build locally instead of using image
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILD_ENV=development
+    # Mount source code for potential hot-reload (requires Spring DevTools)
+    volumes:
+      - ./src:/app/src:ro
+      - ./build:/app/build
+    # Development Java options: enable debugging, reduce memory
+    environment:
+      - JAVA_OPTS=-Xmx1g -Xms256m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      - SPRING_PROFILES_ACTIVE=local
+      - LOGGING_LEVEL_APP_VESPA_DEMO=DEBUG
+    # Expose debug port
+    ports:
+      - "8081:8081"
+      - "5005:5005" # Java debug port
+    # Don't restart automatically in development
+    restart: "no"

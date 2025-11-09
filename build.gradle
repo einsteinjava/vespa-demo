@@ -1,0 +1,58 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'app.vespa'
+version = '0.0.1-SNAPSHOT'
+description = 'Vespa Demo'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springAiVersion', "1.0.3")
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// Removed Vertex AI Gemini - using custom Google AI Gemini client instead
+
+	// Vespa client dependencies - latest stable versions from Maven Central
+	implementation 'com.yahoo.vespa:vespa-feed-client:8.516.26'
+
+	// HTTP client for Vespa REST API - Spring Boot 3.5.x requires httpclient5 5.4.x
+	implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.1'
+	implementation 'org.apache.httpcomponents.core5:httpcore5:5.3.1'
+	implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.3.1'
+
+	// Lombok for cleaner code
+	compileOnly 'org.projectlombok:lombok:1.18.36'
+	annotationProcessor 'org.projectlombok:lombok:1.18.36'
+
+	// Jackson for JSON processing
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.core:jackson-core'
+	implementation 'com.fasterxml.jackson.core:jackson-annotations'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

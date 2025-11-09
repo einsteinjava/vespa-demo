@@ -1,0 +1,10 @@
+vespa:
+  endpoint: http://localhost:8080
+
+spring:
+  ai:
+    vertex:
+      ai:
+        gemini:
+          project-id: local-dev
+          location: us-central1

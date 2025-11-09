@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: vespa-rag-demo
+  # Removed Vertex AI config - using custom Google AI Gemini client
+  # API key is configured via GEMINI_API_KEY environment variable
+
+vespa:
+  endpoint: ${VESPA_ENDPOINT:http://localhost:8080}
+  schema: music
+  timeout-ms: 30000
+  connection-timeout-ms: 5000
+  max-connections: 100
+
+rag:
+  max-retrieval-results: 5
+  embedding:
+    model: all-MiniLM-L6-v2
+    dimension: 384
+  generation:
+    system-prompt: |
+      You are a knowledgeable music recommendation assistant. Use the provided album information
+      to give personalized, detailed recommendations. Always cite specific albums and artists
+      from the context in your response.
+    temperature: 0.7
+
+server:
+  port: 8081
+
+logging:
+  level:
+    app.vespa.demo: DEBUG
+    org.springframework.ai: INFO

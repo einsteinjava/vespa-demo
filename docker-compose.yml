@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Vespa Search Engine and Vector Database
+  vespa:
+    image: vespaengine/vespa:latest
+    container_name: vespa-rag-demo
+    hostname: vespa-container
+    ports:
+      - "8080:8080"   # Query and Document API
+      - "19071:19071" # Health and Status API
+    environment:
+      - VESPA_CONFIGSERVERS=vespa-container
+    volumes:
+      - vespa-data:/opt/vespa/var
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19071/state/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - rag-network
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+
+  # Spring Boot RAG Application
+  rag-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vespa-rag-app
+    ports:
+      - "8081:8081" # Spring Boot API
+    environment:
+      # Vespa Configuration
+      - VESPA_ENDPOINT=http://vespa:8080
+
+      # Gemini API Configuration (provide these via .env file)
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID:-rag-demo}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-us-central1}
+
+      # Spring Configuration
+      - SPRING_PROFILES_ACTIVE=local
+      - SERVER_PORT=8081
+
+      # Java Options
+      - JAVA_OPTS=-Xmx2g -Xms512m
+    depends_on:
+      vespa:
+        condition: service_healthy
+    networks:
+      - rag-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/search/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  vespa-data:
+    driver: local
+
+networks:
+  rag-network:
+    driver: bridge

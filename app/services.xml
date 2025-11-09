@@ -37,6 +37,21 @@
         <search/>
 
         <!--
+            Embedder component for generating text embeddings
+            Uses sentence-transformers/all-MiniLM-L6-v2 model (384 dimensions)
+            This component is referenced in the schema via the 'embed' keyword
+
+            See:
+             - Reference: https://docs.vespa.ai/en/embedding.html
+        -->
+        <component id="embedder" type="hugging-face-embedder">
+            <transformer-model url="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"/>
+            <tokenizer-model url="https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json"/>
+            <pooling-strategy>mean</pooling-strategy>
+            <max-tokens>128</max-tokens>
+        </component>
+
+        <!--
             <nodes> specifies the nodes that should run this cluster.
         -->
         <nodes>
@@ -58,7 +73,7 @@
         </documents>
         <tuning>
             <resource-limits>
-                <disk>0.85</disk>
+                <disk>0.95</disk>
             </resource-limits>
         </tuning>
         <nodes>
