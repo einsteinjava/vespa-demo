@@ -1,8 +1,6 @@
 # Ignore build artifacts
 build/
 bin/
-.gradle/
-gradle-wrapper.jar
 
 # Ignore IDE files
 .idea/
@@ -22,6 +20,7 @@ gradle-wrapper.jar
 # Ignore Docker files
 Dockerfile
 docker-compose.yml
+docker-compose.dev.yml
 .dockerignore
 
 # Ignore documentation

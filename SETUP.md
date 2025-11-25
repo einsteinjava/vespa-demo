@@ -861,6 +861,13 @@ curl -X POST http://localhost:8081/api/rag/query \
   - Windows: Download from https://stedolan.github.io/jq/download/
 - Or remove `| jq '.'` from the test commands in the Makefile
 
+### Problem: "failed to solve: failed to compute cache key" or "/gradle: not found" during Docker build
+
+**Solution:**
+- This error occurs when Docker can't find the `gradle` directory during the build
+- If the directory is missing, you may need to regenerate it or restore it from version control by using command `git pull` from the terminal on that working directory.
+- Also check for any warnings about `version: '3.8'` in docker-compose.yml - this field is obsolete in newer Docker Compose versions and can be safely removed
+
 ### Getting More Help
 
 If you're still stuck:
